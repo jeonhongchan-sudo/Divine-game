@@ -1,0 +1,6 @@
+{
+  "name": "신성 가차: 궁극의 소환 시뮬레이터",
+  "description": "OG(0.00000000032%), 천상(0.00000001%), 영원한(0.000005%), 경건한(0.0001%), 신성(0.05%), 비밀(1%), 신화(6.5%) 등 12개 등급의 초정밀 실시간 가차 시뮬레이터",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
