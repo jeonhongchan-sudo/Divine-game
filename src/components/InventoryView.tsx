@@ -9,9 +9,20 @@ import {
   Swords,
   Coins,
   Check,
+  History,
+  Compass,
+  Hourglass,
+  Trophy,
+  Sun,
+  Crown,
+  Flame,
+  Wand2,
+  Gem,
+  Box,
 } from 'lucide-react';
 import { InventoryItem, Rarity, GachaCard } from '../types/game';
 import { CARDS_MAP } from '../data/cards';
+import { RELICS_MAP } from '../data/relics';
 import { RARITIES, RARITY_ORDER } from '../data/rarityConfig';
 import { CardItem } from './CardItem';
 import { sound } from '../utils/audio';
@@ -21,6 +32,9 @@ interface InventoryViewProps {
   onSelectCard: (card: GachaCard, item: InventoryItem) => void;
   onUpgradeStar: (cardId: string) => void;
   onBatchSellCommons: () => void;
+  ownedRelicIds?: Set<string>;
+  luckyBlockCount: number;
+  onOpenLuckyBlock: () => void;
 }
 
 type SortOption = 'rarity' | 'power' | 'count' | 'star' | 'name';
@@ -30,6 +44,9 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   onSelectCard,
   onUpgradeStar,
   onBatchSellCommons,
+  ownedRelicIds = new Set(),
+  luckyBlockCount,
+  onOpenLuckyBlock,
 }) => {
   const [selectedRarity, setSelectedRarity] = useState<Rarity | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -236,7 +253,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
         <div className="text-center py-16 bg-slate-900/40 rounded-2xl border border-slate-800/80">
           <Sparkles className="h-10 w-10 text-slate-600 mx-auto mb-3" />
           <h3 className="text-sm font-bold text-slate-300">
-            보관함에 해당하는 카드가 없습니다.
+            배낭에 해당하는 카드가 없습니다.
           </h3>
           <p className="text-xs text-slate-500 mt-1">
             소환의 제단에서 카드를 소환하거나 검색 필터를 변경해 보세요.
@@ -278,6 +295,92 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           })}
         </div>
       )}
+
+      {/* Relics & Special Items Section */}
+      <div className="mt-12 pt-8 border-t border-slate-800">
+        <div className="flex items-center gap-2 mb-6">
+          <History className="h-5 w-5 text-emerald-400" />
+          <h2 className="text-xl font-bold text-slate-100 font-cinzel">수집된 유물 및 특별 아이템 (Relics)</h2>
+          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+            {ownedRelicIds.size + (luckyBlockCount > 0 ? 1 : 0)}종 보유 중
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Lucky Block Item in Relic Slot */}
+          {luckyBlockCount > 0 && (
+            <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/20 to-slate-900 border border-amber-500/40 flex flex-col gap-4 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-2">
+                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">x{luckyBlockCount}</span>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-amber-500/20 text-amber-400">
+                  <Box className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-amber-300">신비한 럭키 블럭</h4>
+                  <p className="text-[10px] text-amber-400/80 font-bold">소모성 보물 상자</p>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                개봉 시 2천만 골드/다이아, 또는 초고등급 카드를 획득할 수 있는 신비한 상자입니다.
+              </p>
+
+              <button
+                onClick={onOpenLuckyBlock}
+                className="w-full py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] shadow-lg shadow-amber-500/10 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="h-3 w-3" />
+                <span>지금 개봉하기</span>
+              </button>
+            </div>
+          )}
+
+          {/* Regular Relics */}
+          {Array.from(ownedRelicIds).map((relicId) => {
+            const relic = RELICS_MAP[relicId];
+            if (!relic) return null;
+            const rarity = RARITIES[relic.rarity];
+            
+            const RelicIcon = (() => {
+              switch(relic.iconType) {
+                case 'Compass': return Compass;
+                case 'Hourglass': return Hourglass;
+                case 'Trophy': return Trophy;
+                case 'Sun': return Sun;
+                case 'Crown': return Crown;
+                case 'Gem': return Gem;
+                case 'Flame': return Flame;
+                case 'Wand2': return Wand2;
+                default: return Gem;
+              }
+            })();
+
+            return (
+              <div key={relicId} className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-4 hover:border-emerald-500/40 transition-colors group">
+                <div className={`p-3 rounded-lg bg-opacity-10 bg-current ${rarity?.textColor}`}>
+                  <RelicIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-200 group-hover:text-emerald-300 transition-colors">{relic.name}</h4>
+                  <p className="text-[10px] text-emerald-400 font-bold mb-0.5">{relic.effect}</p>
+                  <p className="text-[10px] text-slate-500 line-clamp-1">{relic.description}</p>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Empty Slot Placeholder if no relics/lucky blocks */}
+          {ownedRelicIds.size === 0 && luckyBlockCount === 0 && (
+            <div className="col-span-full py-12 text-center rounded-xl bg-slate-900/40 border border-dashed border-slate-800">
+              <History className="h-8 w-8 text-slate-700 mx-auto mb-2" />
+              <p className="text-xs text-slate-600 font-bold">수집된 유물이 없습니다. 상점에서 유물을 획득해 보세요!</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

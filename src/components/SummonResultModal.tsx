@@ -25,6 +25,10 @@ import { CardItem } from './CardItem';
 import { sound } from '../utils/audio';
 
 const HIGH_RARITIES: Rarity[] = [
+  'EXCELLENT',
+  'ANCIENT',
+  'MULTI',
+  'SPECIAL',
   'OG',
   'CELESTIAL',
   'ETERNAL',
@@ -40,6 +44,7 @@ interface SummonResultModalProps {
   onClose: () => void;
   onPullAgain: (count: number) => void;
   gems: number;
+  title?: string;
 }
 
 export const SummonResultModal: React.FC<SummonResultModalProps> = ({
@@ -47,6 +52,7 @@ export const SummonResultModal: React.FC<SummonResultModalProps> = ({
   onClose,
   onPullAgain,
   gems,
+  title,
 }) => {
   // Mode: 'roulette' (spin card by card) or 'summary' (all cards view)
   const [viewMode, setViewMode] = useState<'roulette' | 'summary'>('roulette');
@@ -179,10 +185,16 @@ export const SummonResultModal: React.FC<SummonResultModalProps> = ({
 
   // Start spinning on card change or on initial open
   useEffect(() => {
+    // If it's a massive pull (10,000), skip roulette immediately for performance
+    if (results.length >= 10000 && viewMode === 'roulette') {
+      handleSkipToSummary();
+      return;
+    }
+    
     if (viewMode === 'roulette') {
       startSpin();
     }
-  }, [currentIndex, viewMode]);
+  }, [currentIndex, viewMode, results.length]);
 
   // Auto-advance to next card if enabled
   useEffect(() => {
@@ -221,6 +233,8 @@ export const SummonResultModal: React.FC<SummonResultModalProps> = ({
   };
 
   // Check highest rarity in the batch for summary banners
+  const hasExcellent = results.some((r) => r.card.rarity === 'EXCELLENT');
+  const hasAncient = results.some((r) => r.card.rarity === 'ANCIENT');
   const hasOg = results.some((r) => r.card.rarity === 'OG');
   const hasCelestial = results.some((r) => r.card.rarity === 'CELESTIAL');
   const hasEternal = results.some((r) => r.card.rarity === 'ETERNAL');
@@ -238,7 +252,7 @@ export const SummonResultModal: React.FC<SummonResultModalProps> = ({
   const is10Pull = results.length === 10;
   const isSingle = results.length === 1;
 
-  const againCost = isSingle ? 100 : Math.round(results.length * 90);
+  const againCost = isSingle ? 100 : results.length === 10000 ? 900000 : Math.round(results.length * 90);
   const canPullAgain = gems >= againCost;
 
   return (
@@ -253,13 +267,13 @@ export const SummonResultModal: React.FC<SummonResultModalProps> = ({
             <div>
               <h3 className="text-sm sm:text-base font-extrabold text-slate-100 flex items-center gap-2">
                 <span>
-                  {viewMode === 'roulette'
+                  {title || (viewMode === 'roulette'
                     ? '🎰 운명의 룰렛 소환'
                     : isSingle
                     ? '소환 결과'
                     : is10Pull
                     ? '10회 소환 완료'
-                    : `${results.length}회 대량 소환 통계`}
+                    : `${results.length}회 대량 소환 통계`)}
                 </span>
                 {viewMode === 'roulette' && (
                   <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono-num font-bold">
@@ -601,7 +615,29 @@ export const SummonResultModal: React.FC<SummonResultModalProps> = ({
         {viewMode === 'summary' && (
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
             {/* Top Celebrations for High Rarity in Batch */}
-            {hasOg && (
+            {hasExcellent && (
+              <div className="p-4 rounded-xl bg-gradient-to-r from-rose-600/30 via-white/20 to-rose-600/30 border-2 border-rose-400 shadow-[0_0_50px_rgba(255,0,0,0.8)] text-center animate-bounce">
+                <span className="text-xs font-black uppercase tracking-widest text-rose-300">
+                  ⚠️ 5e-82% 불가능한 확률의 기적 ⚠️
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white mt-0.5">
+                  [EXCELLENT] 엑설런트 등급 절대자가 강림했습니다!!
+                </h2>
+              </div>
+            )}
+
+            {hasAncient && !hasExcellent && (
+              <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-600/30 via-amber-400/20 to-indigo-600/30 border-2 border-indigo-400 shadow-[0_0_40px_rgba(79,70,229,0.7)] text-center animate-pulse">
+                <span className="text-xs font-black uppercase tracking-widest text-amber-300">
+                  📜 10^-42% 태초의 신비 📜
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white mt-0.5">
+                  [ANCIENT] 고대 등급 전설이 소환되었습니다!
+                </h2>
+              </div>
+            )}
+
+            {hasOg && !hasExcellent && !hasAncient && (
               <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-500/30 via-emerald-400/30 to-amber-400/30 border-2 border-cyan-300 shadow-[0_0_40px_rgba(56,189,248,0.7)] text-center animate-pulse">
                 <span className="text-xs font-black uppercase tracking-widest text-cyan-300">
                   ⚡ 0.00000000032% (1/3,125억) 궁극의 원형 ⚡

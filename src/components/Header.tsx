@@ -13,11 +13,12 @@ import {
   Trophy,
   TrendingUp,
   Key,
+  ShoppingCart,
 } from 'lucide-react';
 import { formatLuck } from '../utils/gachaEngine';
 import { PWAInstallButton } from './PWAInstallButton';
 
-export type ActiveTab = 'summon' | 'inventory' | 'codex' | 'stats' | 'achievements';
+export type ActiveTab = 'summon' | 'inventory' | 'codex' | 'stats' | 'achievements' | 'shop';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -93,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Layers className="h-3.5 w-3.5" />
-            <span>보관함</span>
+            <span>배낭</span>
           </button>
 
           <button
@@ -130,6 +131,18 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Trophy className="h-3.5 w-3.5" />
             <span>업적</span>
+          </button>
+
+          <button
+            onClick={() => onSelectTab('shop')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 ${
+              activeTab === 'shop'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <ShoppingCart className="h-3.5 w-3.5" />
+            <span>코인 상점</span>
           </button>
         </nav>
 
@@ -174,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {gems.toLocaleString()}
               </span>
               <span className="text-[10px] text-emerald-400 font-black block tracking-tight">
-                다이아 (+1억/s)
+                다이아 (+1/s)
               </span>
             </div>
           </div>
@@ -182,11 +195,11 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Free Diamond Refill Button */}
           <button
             onClick={onAddFreeGems}
-            title="테스트용 다이아 +1,000,000,000개 (10억) 즉시 무료 보충"
+            title="테스트용 다이아 +1,000개 즉시 무료 보충"
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-950/60 border border-emerald-500/50 rounded-lg hover:bg-emerald-900/60 transition-all cursor-pointer whitespace-nowrap shrink-0"
           >
             <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">+10억 충전</span>
+            <span className="hidden sm:inline">+1000 충전</span>
           </button>
 
           {/* Secret Code (Coupon) Button */}
@@ -239,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({
               : 'text-slate-400'
           }`}
         >
-          보관함
+          배낭
         </button>
         <button
           onClick={() => onSelectTab('codex')}
@@ -270,6 +283,16 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
         >
           업적
+        </button>
+        <button
+          onClick={() => onSelectTab('shop')}
+          className={`px-3 py-1 rounded-md shrink-0 whitespace-nowrap font-medium ${
+            activeTab === 'shop'
+              ? 'bg-amber-500/20 text-amber-300'
+              : 'text-slate-400'
+          }`}
+        >
+          상점
         </button>
         {onOpenCodeModal && (
           <button

@@ -14,6 +14,7 @@ import {
   Coins,
   TrendingUp,
   Key,
+  Infinity,
 } from 'lucide-react';
 import { Rarity } from '../types/game';
 import { RARITIES, RARITY_ORDER, RARITY_RATE_DISPLAY } from '../data/rarityConfig';
@@ -227,7 +228,7 @@ export const SummonAltar: React.FC<SummonAltarProps> = ({
       </div>
 
       {/* Summon Action Buttons Strip */}
-      <div className="w-full max-w-4xl mt-2 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div className="w-full max-w-5xl mt-2 grid grid-cols-2 lg:grid-cols-5 gap-2.5">
         {/* 1x Pull */}
         <button
           onClick={() => onPull(1)}
@@ -297,6 +298,25 @@ export const SummonAltar: React.FC<SummonAltarProps> = ({
           <div className="flex items-center gap-1 text-[11px] font-mono-num text-cyan-300">
             <Gem className="h-3 w-3 text-sky-400" />
             <span className="font-bold">90,000 다이아</span>
+          </div>
+        </button>
+
+        {/* 10,000x Infinite Pull */}
+        <button
+          onClick={() => onPull(10000)}
+          disabled={isRolling || gems < 900000}
+          className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-purple-500/80 bg-gradient-to-b from-purple-950/40 via-slate-900 to-slate-950 hover:border-purple-400 hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all cursor-pointer shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-purple-500 to-rose-500 text-white shadow-sm animate-pulse">
+            기적의 영역
+          </span>
+          <span className="text-xs sm:text-sm font-black text-purple-200 mb-1 flex items-center gap-1">
+            <Infinity className="h-3.5 w-3.5 text-purple-300" />
+            10,000회 연속
+          </span>
+          <div className="flex items-center gap-1 text-[11px] font-mono-num text-purple-300">
+            <Gem className="h-3 w-3 text-sky-400" />
+            <span className="font-bold">900,000 다이아</span>
           </div>
         </button>
       </div>

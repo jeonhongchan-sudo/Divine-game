@@ -45,65 +45,89 @@ export function rollSingleRarity(
 
   // ULTRA GOD-TIER LUCK (행운 1000000000000000000000000 - 10^24)
   // 1자(10^24) 이상의 초월적 행운 상태에서는 전 우주의 기적이 집중되어
-  // 최상위 5대 천상/초희귀 등급(OG, CELESTIAL, ETERNAL, PIOUS, DIVINE)만 강림합니다!
+  // 최상위 초희귀 등급(MULTI, SPECIAL, OG, CELESTIAL, ETERNAL, PIOUS, DIVINE)만 강림합니다!
   if (luckMultiplier >= 1e20) {
     const roll = Math.random();
-    if (roll < 0.35) return 'OG'; // 35% 확률로 3,125억분의 1 OG 등급 강림!
-    if (roll < 0.70) return 'CELESTIAL'; // 35% 확률로 100억분의 1 천상 등급 강림!
-    if (roll < 0.85) return 'ETERNAL'; // 15% 확률로 영원한 등급 강림!
-    if (roll < 0.95) return 'PIOUS'; // 10% 확률로 경건한 등급 강림!
-    return 'DIVINE'; // 5% 확률로 신성 등급 강림!
+    if (roll < 0.02) return 'EXCELLENT'; // 2% 엑설런트
+    if (roll < 0.08) return 'ANCIENT'; // 6% 고대
+    if (roll < 0.20) return 'MULTI'; // 12% 멀티
+    if (roll < 0.40) return 'SPECIAL'; // 20% 특별
+    if (roll < 0.60) return 'OG'; // 20% OG
+    if (roll < 0.75) return 'CELESTIAL'; // 15% 천상
+    if (roll < 0.85) return 'ETERNAL'; // 10% 영원한
+    if (roll < 0.95) return 'PIOUS'; // 10% 경건한
+    return 'DIVINE'; // 5% 신성
   }
 
   if (mode === 'waterfall') {
     // Top-down sequential check: Evaluates strictly from rarest to most common
     const luck = Math.max(1.0, luckMultiplier);
 
-    // 1. OG: 0.00000000032% (1 / 3,125억)
+    // 1. EXCELLENT: 5e-82%
+    if (Math.random() * 100 < RARITIES.EXCELLENT.nominalRate * luck) {
+      return 'EXCELLENT';
+    }
+    // 2. ANCIENT: 10^-42%
+    if (Math.random() * 100 < RARITIES.ANCIENT.nominalRate * luck) {
+      return 'ANCIENT';
+    }
+    // 3. MULTI (멀티): 10^-33%
+    if (Math.random() * 100 < RARITIES.MULTI.nominalRate * luck) {
+      return 'MULTI';
+    }
+    // 2. SPECIAL (특별): 9.47e-22%
+    if (Math.random() * 100 < RARITIES.SPECIAL.nominalRate * luck) {
+      return 'SPECIAL';
+    }
+    // 3. OG: 0.00000000032% (1 / 3,125억)
     if (Math.random() * 100 < RARITIES.OG.nominalRate * luck) {
       return 'OG';
     }
-    // 2. Celestial (천상): 0.00000001% (1 / 100억)
+    // 4. Celestial (천상): 0.00000001% (1 / 100억)
     if (Math.random() * 100 < RARITIES.CELESTIAL.nominalRate * luck) {
       return 'CELESTIAL';
     }
-    // 3. Eternal (영원한): 0.000005% (1 / 2,000만)
+    // 5. Eternal (영원한): 0.00000005%
     if (Math.random() * 100 < RARITIES.ETERNAL.nominalRate * luck) {
       return 'ETERNAL';
     }
-    // 4. Pious (경건한): 0.0001% (1 / 100만)
+    // 6. Pious (경건한): 0.0001% (1 / 100만)
     if (Math.random() * 100 < RARITIES.PIOUS.nominalRate * luck) {
       return 'PIOUS';
     }
-    // 5. Divine (신성): 0.05% (1 / 2,000)
+    // 7. Divine (신성): 0.05% (1 / 2,000)
     if (Math.random() * 100 < RARITIES.DIVINE.nominalRate * luck) {
       return 'DIVINE';
     }
-    // 6. Secret (비밀): 1.0% (1 / 100)
+    // 8. Secret (비밀): 1.0% (1 / 100)
     if (Math.random() * 100 < RARITIES.SECRET.nominalRate * luck) {
       return 'SECRET';
     }
-    // 7. Mythic (신화적인): 6.5%
+    // 9. Cosmic (우주): 4.0%
+    if (Math.random() * 100 < RARITIES.COSMIC.nominalRate * luck) {
+      return 'COSMIC';
+    }
+    // 10. Mythic (신화적인): 6.5%
     if (Math.random() * 100 < RARITIES.MYTHIC.nominalRate * luck) {
       return 'MYTHIC';
     }
-    // 8. Legendary (전설): 16%
+    // 11. Legendary (전설): 16%
     if (Math.random() * 100 < RARITIES.LEGENDARY.nominalRate) {
       return 'LEGENDARY';
     }
-    // 9. Epic (에픽): 21%
+    // 12. Epic (에픽): 21%
     if (Math.random() * 100 < RARITIES.EPIC.nominalRate) {
       return 'EPIC';
     }
-    // 10. Rare (레어): 29%
+    // 13. Rare (레어): 29%
     if (Math.random() * 100 < RARITIES.RARE.nominalRate) {
       return 'RARE';
     }
-    // 11. Uncommon (드문): 36%
+    // 14. Uncommon (드문): 36%
     if (Math.random() * 100 < RARITIES.UNCOMMON.nominalRate) {
       return 'UNCOMMON';
     }
-    // 12. Common (일반): Fallback / 45%
+    // 15. Common (일반): Fallback / 45%
     return 'COMMON';
   } else {
     // Normalized weight mode

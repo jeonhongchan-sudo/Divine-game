@@ -1,12 +1,15 @@
 import { Rarity, RarityConfig } from '../types/game';
 
 // Rates requested:
+// MULTI: 0.000000000000000000000000000000001% (10^-33)
+// SPECIAL: 0.000000000000000000000947% (9.47 * 10^-22)
 // OG: 0.00000000032% (1 / 312,500,000,000)
 // 천상: 0.00000001% (1 / 10,000,000,000)
 // 영원한: 0.000005% (1 / 20,000,000)
 // 경건한: 0.0001% (1 / 1,000,000)
 // 신성: 0.05% (1 / 2,000)
 // 비밀: 1.0% (1 / 100)
+// 우주: 4.0%
 // 신화적인: 6.5%
 // 전설: 16.0%
 // 에픽: 21.0%
@@ -15,26 +18,36 @@ import { Rarity, RarityConfig } from '../types/game';
 // 일반: 45.0%
 
 export const TOTAL_NOMINAL_WEIGHT =
+  5e-82 +
+  1e-42 +
+  1e-33 +
+  9.47e-22 +
   0.00000000032 +
   0.00000001 +
-  0.000005 +
+  0.00000005 +
   0.0001 +
   0.05 +
   1.0 +
+  4.0 +
   6.5 +
   16.0 +
   21.0 +
   29.0 +
   36.0 +
-  45.0; // ~154.55010501032
+  45.0;
 
 export const RARITY_ORDER: Rarity[] = [
+  'EXCELLENT',
+  'ANCIENT',
+  'MULTI',
+  'SPECIAL',
   'OG',
   'CELESTIAL',
   'ETERNAL',
   'PIOUS',
   'DIVINE',
   'SECRET',
+  'COSMIC',
   'MYTHIC',
   'LEGENDARY',
   'EPIC',
@@ -44,12 +57,17 @@ export const RARITY_ORDER: Rarity[] = [
 ];
 
 export const RARITY_ODDS_TEXT: Record<Rarity, string> = {
+  EXCELLENT: '1 / 무한에 가까운 기적',
+  ANCIENT: '1 / 100간',
+  MULTI: '1 / 1,000양',
+  SPECIAL: '1 / 105해',
   OG: '1 / 3,125억',
   CELESTIAL: '1 / 100억',
   ETERNAL: '1 / 2,000만',
   PIOUS: '1 / 100만',
   DIVINE: '1 / 2,000',
   SECRET: '1 / 100',
+  COSMIC: '1 / 25',
   MYTHIC: '1 / 15.4',
   LEGENDARY: '1 / 6.25',
   EPIC: '1 / 4.76',
@@ -59,12 +77,17 @@ export const RARITY_ODDS_TEXT: Record<Rarity, string> = {
 };
 
 export const RARITY_RATE_DISPLAY: Record<Rarity, string> = {
+  EXCELLENT: '0.0...05%',
+  ANCIENT: '0.0...01%',
+  MULTI: '0.0...01%',
+  SPECIAL: '0.0...947%',
   OG: '0.00000000032%',
   CELESTIAL: '0.00000001%',
   ETERNAL: '0.000005%',
   PIOUS: '0.0001%',
   DIVINE: '0.05%',
   SECRET: '1.0%',
+  COSMIC: '4.0%',
   MYTHIC: '6.5%',
   LEGENDARY: '16.0%',
   EPIC: '21.0%',
@@ -74,6 +97,58 @@ export const RARITY_RATE_DISPLAY: Record<Rarity, string> = {
 };
 
 export const RARITIES: Record<Rarity, RarityConfig> = {
+  EXCELLENT: {
+    id: 'EXCELLENT',
+    nameKr: '엑설런트',
+    nominalRate: 5e-82,
+    normalizedRate: (5e-82 / TOTAL_NOMINAL_WEIGHT) * 100,
+    color: '#ff0000',
+    badgeBg: 'bg-gradient-to-r from-rose-600 via-white to-rose-600 text-slate-950 font-black border-4 border-rose-400 animate-bounce',
+    borderClass: 'border-[6px] border-rose-500 shadow-[0_0_100px_rgba(255,0,0,1)] ring-[8px] ring-white/50',
+    glowClass: 'shadow-[0_0_120px_rgba(255,0,0,1)]',
+    textColor: 'text-rose-500 font-black drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)]',
+    gradient: 'from-rose-950 via-white to-rose-950',
+    description: '5e-82% 확률. 존재 자체가 불가능에 가까운 인과율의 결정체.',
+  },
+  ANCIENT: {
+    id: 'ANCIENT',
+    nameKr: '고대',
+    nominalRate: 1e-42,
+    normalizedRate: (1e-42 / TOTAL_NOMINAL_WEIGHT) * 100,
+    color: '#4f46e5',
+    badgeBg: 'bg-gradient-to-r from-indigo-600 via-amber-400 to-indigo-600 text-white font-black border-2 border-amber-500',
+    borderClass: 'border-4 border-indigo-500 shadow-[0_0_80px_rgba(79,70,229,1)] ring-4 ring-amber-300',
+    glowClass: 'shadow-[0_0_90px_rgba(79,70,229,1)]',
+    textColor: 'text-indigo-400 font-black',
+    gradient: 'from-slate-900 via-indigo-900 to-slate-900',
+    description: '1e-42% 확률. 우주가 탄생하기 전부터 존재했던 태초의 유산.',
+  },
+  MULTI: {
+    id: 'MULTI',
+    nameKr: '멀티',
+    nominalRate: 1e-33,
+    normalizedRate: (1e-33 / TOTAL_NOMINAL_WEIGHT) * 100,
+    color: '#ffffff',
+    badgeBg: 'bg-gradient-to-r from-slate-100 via-purple-100 to-slate-100 text-slate-950 font-black tracking-tighter border-2 border-white animate-pulse',
+    borderClass: 'border-4 border-white shadow-[0_0_60px_rgba(255,255,255,1)] ring-4 ring-purple-200',
+    glowClass: 'shadow-[0_0_70px_rgba(255,255,255,1)]',
+    textColor: 'text-white font-black drop-shadow-lg',
+    gradient: 'from-slate-200 via-white to-slate-200',
+    description: '0.00...01% (1/1000양) 확률. 다차원의 질서를 초월한 존재.',
+  },
+  SPECIAL: {
+    id: 'SPECIAL',
+    nameKr: '특별',
+    nominalRate: 9.47e-22,
+    normalizedRate: (9.47e-22 / TOTAL_NOMINAL_WEIGHT) * 100,
+    color: '#fbbf24',
+    badgeBg: 'bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 text-slate-950 font-black border-2 border-amber-600',
+    borderClass: 'border-4 border-amber-400 shadow-[0_0_50px_rgba(251,191,36,0.9)] ring-2 ring-yellow-200',
+    glowClass: 'shadow-[0_0_60px_rgba(251,191,36,1)]',
+    textColor: 'text-amber-400 font-black',
+    gradient: 'from-amber-900 via-yellow-700 to-amber-900',
+    description: '0.00...947% (1/105해) 확률. 신이 직접 빚어낸 특별한 존재.',
+  },
   OG: {
     id: 'OG',
     nameKr: 'OG',
@@ -151,6 +226,19 @@ export const RARITIES: Record<Rarity, RarityConfig> = {
     textColor: 'text-indigo-300 font-bold',
     gradient: 'from-indigo-900/40 via-purple-950/40 to-slate-950',
     description: '1.0% (1/100) 확률. 차원 왜곡 뒤편에 감춰진 미지의 금기 영역.',
+  },
+  COSMIC: {
+    id: 'COSMIC',
+    nameKr: '우주',
+    nominalRate: 4.0,
+    normalizedRate: (4.0 / TOTAL_NOMINAL_WEIGHT) * 100,
+    color: '#6366f1',
+    badgeBg: 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold border border-white/50',
+    borderClass: 'border-2 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.4)]',
+    glowClass: 'shadow-[0_0_25px_rgba(99,102,241,0.5)]',
+    textColor: 'text-indigo-400 font-bold',
+    gradient: 'from-indigo-950/40 via-purple-950/30 to-slate-950',
+    description: '4.0% 확률. 성계의 흐름과 우주의 섭리를 관장하는 존재.',
   },
   MYTHIC: {
     id: 'MYTHIC',

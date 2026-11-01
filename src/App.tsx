@@ -11,6 +11,8 @@ import {
   Achievement,
   Rarity,
   RollEngineMode,
+  ShopItem,
+  ShopState,
 } from './types/game';
 import { GACHA_CARDS, CARDS_MAP, CARDS_BY_RARITY } from './data/cards';
 import { RARITIES, RARITY_ORDER } from './data/rarityConfig';
@@ -20,6 +22,7 @@ import {
   getRandomCardForRarity,
   PullResult,
 } from './utils/gachaEngine';
+import { generateShopItems } from './utils/shopEngine';
 import { sound } from './utils/audio';
 
 import { Header, ActiveTab } from './components/Header';
@@ -33,6 +36,7 @@ import { CardDetailModal } from './components/CardDetailModal';
 import { LuckUpgradeModal } from './components/LuckUpgradeModal';
 import { SecretCodeModal } from './components/SecretCodeModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { ShopView } from './components/ShopView';
 import { RotateCcw, Sparkles } from 'lucide-react';
 
 const STORAGE_KEY = 'divine_gacha_save_v1';
@@ -40,7 +44,7 @@ const STORAGE_KEY = 'divine_gacha_save_v1';
 export default function App() {
   // Primary Game Currencies
   const [gold, setGold] = useState<number>(5000);
-  const [gems, setGems] = useState<number>(3000); // Generous starting balance!
+  const [gems, setGems] = useState<number>(100); // Modest starting balance!
 
   // Inventory & Collection State
   const [inventory, setInventory] = useState<Record<string, InventoryItem>>({});
@@ -50,12 +54,17 @@ export default function App() {
   const [stats, setStats] = useState<GachaStats>({
     totalPulls: 0,
     pullsByRarity: {
+      EXCELLENT: 0,
+      ANCIENT: 0,
+      MULTI: 0,
+      SPECIAL: 0,
       OG: 0,
       CELESTIAL: 0,
       ETERNAL: 0,
       PIOUS: 0,
       DIVINE: 0,
       SECRET: 0,
+      COSMIC: 0,
       MYTHIC: 0,
       LEGENDARY: 0,
       EPIC: 0,
@@ -80,6 +89,7 @@ export default function App() {
 
   // Modals & Inspection
   const [currentResults, setCurrentResults] = useState<PullResult[] | null>(null);
+  const [resultsTitle, setResultsTitle] = useState<string | null>(null);
   const [inspectCard, setInspectCard] = useState<{
     card: GachaCard;
     item?: InventoryItem;
@@ -92,13 +102,24 @@ export default function App() {
   // Coin Luck Level (Upgraded with coins/gold)
   const [coinLuckLevel, setCoinLuckLevel] = useState<number>(0);
 
-  // Ultra God Luck (사용자 요청: 행운 100)
-  const [godLuckBonus, setGodLuckBonus] = useState<number>(100);
+  // Ultra God Luck (사용자 요청: 행운 1,000,000,000)
+  const [godLuckBonus, setGodLuckBonus] = useState<number>(1000000000);
 
-  // High-Tier Pulls Feed
   const [recentHighTierPulls, setRecentHighTierPulls] = useState<
     Array<{ name: string; rarity: Rarity; time: string }>
   >([]);
+
+  // Relics State
+  const [ownedRelicIds, setOwnedRelicIds] = useState<Set<string>>(new Set());
+
+  // Lucky Block Count
+  const [luckyBlockCount, setLuckyBlockCount] = useState<number>(0);
+
+  // Shop State
+  const [shopState, setShopState] = useState<ShopState>({
+    items: [],
+    nextRestockAt: Date.now() + 5 * 60 * 1000,
+  });
 
   // Load from LocalStorage on mount
   useEffect(() => {
@@ -117,6 +138,11 @@ export default function App() {
         if (parsed.stats) setStats(parsed.stats);
         if (parsed.achievements) setAchievements(parsed.achievements);
         if (parsed.engineMode) setEngineMode(parsed.engineMode);
+        if (parsed.shopState) setShopState(parsed.shopState);
+        if (parsed.ownedRelicIds && Array.isArray(parsed.ownedRelicIds)) {
+          setOwnedRelicIds(new Set(parsed.ownedRelicIds));
+        }
+        if (typeof parsed.luckyBlockCount === 'number') setLuckyBlockCount(parsed.luckyBlockCount);
       }
     } catch (e) {
       console.warn('Failed to load saved state from localStorage:', e);
@@ -136,12 +162,15 @@ export default function App() {
         stats,
         achievements,
         engineMode,
+        shopState,
+        ownedRelicIds: Array.from(ownedRelicIds),
+        luckyBlockCount,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
     } catch (e) {
       console.warn('Failed to save to localStorage:', e);
     }
-  }, [gold, gems, coinLuckLevel, godLuckBonus, inventory, unlockedIds, stats, achievements, engineMode]);
+  }, [gold, gems, coinLuckLevel, godLuckBonus, inventory, unlockedIds, stats, achievements, engineMode, shopState, ownedRelicIds, luckyBlockCount]);
 
   // Compute Total GPS, Card Luck and Coin Luck Bonus
   const { totalGps, cardLuckBonus } = useMemo(() => {
@@ -158,17 +187,40 @@ export default function App() {
     return { totalGps: gps, cardLuckBonus: luck };
   }, [inventory]);
 
-  const coinLuckBonus = Number((coinLuckLevel * 1.5).toFixed(1));
-  const totalLuckBonus = godLuckBonus + cardLuckBonus + coinLuckBonus;
+  const relicLuckBonus = useMemo(() => {
+    let bonus = 0;
+    ownedRelicIds.forEach(id => {
+      if (id === 'relic-3') bonus += 20; // 축복받은 루비
+    });
+    return bonus;
+  }, [ownedRelicIds]);
 
-  // Idle Tick: 1초마다 다이아 100,000,000개(1억) 자동 지급 + 골드 자동 획득
+  const coinLuckBonus = Number((coinLuckLevel * 1.5).toFixed(1));
+  const totalLuckBonus = godLuckBonus + cardLuckBonus + coinLuckBonus + relicLuckBonus;
+
   useEffect(() => {
     const interval = setInterval(() => {
-      setGems((prev) => prev + 100000000);
+      setGems((prev) => prev + 1);
       setGold((prev) => prev + (totalGps > 0 ? totalGps : 0));
     }, 1000);
     return () => clearInterval(interval);
   }, [totalGps]);
+
+  // Shop Restock Logic
+  useEffect(() => {
+    const checkRestock = () => {
+      if (Date.now() >= shopState.nextRestockAt || shopState.items.length === 0) {
+        setShopState((prev) => ({
+          items: generateShopItems(),
+          nextRestockAt: Date.now() + 5 * 60 * 1000,
+        }));
+      }
+    };
+
+    checkRestock();
+    const interval = setInterval(checkRestock, 5000); // Check every 5 seconds
+    return () => clearInterval(interval);
+  }, [shopState.nextRestockAt, shopState.items.length]);
 
   // Sound toggle handler
   const handleToggleSound = () => {
@@ -180,7 +232,7 @@ export default function App() {
 
   // Add Free Gems button (+1,000,000,000 / 10억 다이아)
   const handleAddFreeGems = () => {
-    setGems((prev) => prev + 1000000000);
+    setGems((prev) => prev + 1000);
     sound.playCoin();
   };
 
@@ -209,7 +261,13 @@ export default function App() {
   // Core Pull Function
   const executePull = useCallback(
     (count: number, isAuto: boolean = false) => {
-      const cost = count === 1 ? 100 : Math.round(count * 90);
+      let cost = count === 1 ? 100 : Math.round(count * 90);
+      
+      // Special cost for 10,000 pulls
+      if (count === 10000) {
+        cost = 900000;
+      }
+      
       if (gems < cost) {
         if (isAuto) {
           setAutoRollActive(false);
@@ -219,6 +277,7 @@ export default function App() {
 
       setGems((prev) => prev - cost);
       setIsRolling(true);
+      setResultsTitle(null); // Reset to default
 
       const pullResults: PullResult[] = [];
       const newInventory = { ...inventory };
@@ -263,7 +322,7 @@ export default function App() {
 
         // Log if high tier
         if (
-          ['OG', 'CELESTIAL', 'ETERNAL', 'PIOUS', 'DIVINE', 'SECRET', 'MYTHIC'].includes(
+          ['EXCELLENT', 'ANCIENT', 'MULTI', 'SPECIAL', 'OG', 'CELESTIAL', 'ETERNAL', 'PIOUS', 'DIVINE', 'SECRET', 'MYTHIC'].includes(
             rarity
           )
         ) {
@@ -336,7 +395,7 @@ export default function App() {
 
       // Check auto-stop condition
       const drawnHighTier = pullResults.some((r) =>
-        ['OG', 'CELESTIAL', 'ETERNAL', 'PIOUS', 'DIVINE', 'SECRET', 'MYTHIC'].includes(
+        ['EXCELLENT', 'ANCIENT', 'MULTI', 'SPECIAL', 'OG', 'CELESTIAL', 'ETERNAL', 'PIOUS', 'DIVINE', 'SECRET', 'MYTHIC'].includes(
           r.card.rarity
         )
       );
@@ -385,6 +444,169 @@ export default function App() {
     }));
 
     sound.playReveal('LEGENDARY');
+  };
+
+  // Buy Shop Item
+  const handleBuyShopItem = (itemId: string) => {
+    const item = shopState.items.find((i) => i.id === itemId);
+    if (!item || item.isSoldOut || gold < item.cost) {
+      sound.playError();
+      return;
+    }
+
+    setGold((prev) => prev - item.cost);
+    sound.playCoin();
+
+    // Mark as sold out
+    setShopState((prev) => ({
+      ...prev,
+      items: prev.items.map((i) => (i.id === itemId ? { ...i, isSoldOut: true } : i)),
+    }));
+
+    if (item.type === 'card' && item.cardId) {
+      const card = CARDS_MAP[item.cardId];
+      if (card) {
+        setInventory((prev) => {
+          const inv = { ...prev };
+          if (inv[card.id]) {
+            inv[card.id] = { ...inv[card.id], count: inv[card.id].count + 1 };
+          } else {
+            inv[card.id] = {
+              cardId: card.id,
+              count: 1,
+              starLevel: 1,
+              firstUnlockedAt: Date.now(),
+            };
+          }
+          return inv;
+        });
+        setUnlockedIds((prev) => {
+          const next = new Set(prev);
+          next.add(card.id);
+          return next;
+        });
+        sound.playReveal(card.rarity);
+      }
+    } else if (item.type === 'resource' && item.resourceType === 'gems') {
+      setGems((prev) => prev + (item.amount || 0));
+    } else if (item.type === 'luck') {
+      setGodLuckBonus((prev) => prev + (item.amount || 0));
+    } else if (item.type === 'relic' && item.relicId) {
+      setOwnedRelicIds((prev) => {
+        const next = new Set(prev);
+        next.add(item.relicId!);
+        return next;
+      });
+      sound.playReveal('MYTHIC'); // Play fanfare for relic
+    } else if (item.type === 'lucky_block') {
+      setLuckyBlockCount(prev => prev + 1);
+      sound.playTap();
+      alert('🍀 럭키 블럭이 배낭에 추가되었습니다!');
+    }
+  };
+
+  // Open Lucky Block Logic
+  const handleOpenLuckyBlock = () => {
+    if (luckyBlockCount <= 0) return;
+
+    setLuckyBlockCount(prev => prev - 1);
+    sound.playTap();
+
+    // Random reward from Lucky Block (User request: 20M Gold/Gems, 0.0005% SPECIAL, 1% OG, 50% COMMON)
+    const roll = Math.random() * 100;
+    
+    if (roll < 0.0005) {
+      // SPECIAL rarity card (0.0005%)
+      const card = getRandomCardForRarity('SPECIAL');
+      const isNew = !unlockedIds.has(card.id);
+      setInventory(prev => {
+        const inv = { ...prev };
+        if (inv[card.id]) {
+          inv[card.id] = { ...inv[card.id], count: inv[card.id].count + 1 };
+        } else {
+          inv[card.id] = { cardId: card.id, count: 1, starLevel: 1, firstUnlockedAt: Date.now() };
+        }
+        return inv;
+      });
+      setUnlockedIds(prev => {
+        const next = new Set(prev);
+        next.add(card.id);
+        return next;
+      });
+      
+      // Use result modal for cards
+      setResultsTitle('🍀 럭키 블럭 개봉 결과');
+      setCurrentResults([{
+        card,
+        isNew,
+        previousStarLevel: 1,
+        newStarLevel: 1,
+        rollIndex: 0
+      }]);
+      sound.playReveal('SPECIAL');
+    } else if (roll < 1.0005) {
+      // OG rarity card (1%)
+      const card = getRandomCardForRarity('OG');
+      const isNew = !unlockedIds.has(card.id);
+      setInventory(prev => {
+        const inv = { ...prev };
+        if (inv[card.id]) {
+          inv[card.id] = { ...inv[card.id], count: inv[card.id].count + 1 };
+        } else {
+          inv[card.id] = { cardId: card.id, count: 1, starLevel: 1, firstUnlockedAt: Date.now() };
+        }
+        return inv;
+      });
+      setUnlockedIds(prev => {
+        const next = new Set(prev);
+        next.add(card.id);
+        return next;
+      });
+      
+      setResultsTitle('🍀 럭키 블럭 개봉 결과');
+      setCurrentResults([{
+        card,
+        isNew,
+        previousStarLevel: 1,
+        newStarLevel: 1,
+        rollIndex: 0
+      }]);
+      sound.playReveal('OG');
+    } else if (roll < 51.0005) {
+      // COMMON rarity card (50%)
+      const card = getRandomCardForRarity('COMMON');
+      const isNew = !unlockedIds.has(card.id);
+      setInventory(prev => {
+        const inv = { ...prev };
+        if (inv[card.id]) {
+          inv[card.id] = { ...inv[card.id], count: inv[card.id].count + 1 };
+        } else {
+          inv[card.id] = { cardId: card.id, count: 1, starLevel: 1, firstUnlockedAt: Date.now() };
+        }
+        return inv;
+      });
+      setUnlockedIds(prev => {
+        const next = new Set(prev);
+        next.add(card.id);
+        return next;
+      });
+      
+      setResultsTitle('🍀 럭키 블럭 개봉 결과');
+      setCurrentResults([{
+        card,
+        isNew,
+        previousStarLevel: 1,
+        newStarLevel: 1,
+        rollIndex: 0
+      }]);
+      sound.playReveal('COMMON');
+    } else {
+      // Currency reward: 20,000,000 Gold AND 20,000,000 Gems (~48.9995%)
+      const amount = 20000000;
+      setGold(prev => prev + amount);
+      setGems(prev => prev + amount);
+      alert(`🍀 럭키 블럭 결과: [${amount.toLocaleString()} 코인 & 다이아] 가 떴습니다!`);
+    }
   };
 
   // Batch sell duplicates of common & uncommon
@@ -533,18 +755,23 @@ export default function App() {
     ) {
       localStorage.removeItem(STORAGE_KEY);
       setGold(5000);
-      setGems(3000);
+      setGems(100);
       setInventory({});
       setUnlockedIds(new Set());
       setStats({
         totalPulls: 0,
         pullsByRarity: {
+          EXCELLENT: 0,
+          ANCIENT: 0,
+          MULTI: 0,
+          SPECIAL: 0,
           OG: 0,
           CELESTIAL: 0,
           ETERNAL: 0,
           PIOUS: 0,
           DIVINE: 0,
           SECRET: 0,
+          COSMIC: 0,
           MYTHIC: 0,
           LEGENDARY: 0,
           EPIC: 0,
@@ -557,7 +784,8 @@ export default function App() {
       setAchievements(INITIAL_ACHIEVEMENTS);
       setRecentHighTierPulls([]);
       setCoinLuckLevel(0);
-      setGodLuckBonus(100);
+      setGodLuckBonus(1000000000);
+      setLuckyBlockCount(0);
       sound.playTap();
     }
   };
@@ -623,6 +851,9 @@ export default function App() {
             onSelectCard={(card, item) => setInspectCard({ card, item })}
             onUpgradeStar={handleUpgradeStar}
             onBatchSellCommons={handleBatchSellCommons}
+            ownedRelicIds={ownedRelicIds}
+            luckyBlockCount={luckyBlockCount}
+            onOpenLuckyBlock={handleOpenLuckyBlock}
           />
         )}
 
@@ -689,6 +920,14 @@ export default function App() {
             />
           </div>
         )}
+
+        {activeTab === 'shop' && (
+          <ShopView
+            shopState={shopState}
+            gold={gold}
+            onBuy={handleBuyShopItem}
+          />
+        )}
       </main>
 
       {/* Footer */}
@@ -712,7 +951,11 @@ export default function App() {
       {currentResults && (
         <SummonResultModal
           results={currentResults}
-          onClose={() => setCurrentResults(null)}
+          title={resultsTitle || undefined}
+          onClose={() => {
+            setCurrentResults(null);
+            setResultsTitle(null);
+          }}
           onPullAgain={(count) => executePull(count, false)}
           gems={gems}
         />

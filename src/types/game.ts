@@ -1,16 +1,31 @@
 export type Rarity =
+  | 'EXCELLENT'
+  | 'ANCIENT'
+  | 'MULTI'
+  | 'SPECIAL'
   | 'OG'
   | 'CELESTIAL'
   | 'ETERNAL'
   | 'DIVINE'
   | 'PIOUS'
   | 'SECRET'
+  | 'COSMIC'
   | 'MYTHIC'
   | 'LEGENDARY'
   | 'EPIC'
   | 'RARE'
   | 'UNCOMMON'
   | 'COMMON';
+
+export interface Relic {
+  id: string;
+  name: string;
+  description: string;
+  effect: string;
+  rarity: Rarity;
+  iconType: string; // Lucide icon name
+  costMultiplier?: number;
+}
 
 export interface RarityConfig {
   id: Rarity;
@@ -68,4 +83,20 @@ export interface Achievement {
   isUnlocked: boolean;
   progress: number;
   maxProgress: number;
+}
+
+export interface ShopItem {
+  id: string;
+  type: 'card' | 'resource' | 'luck' | 'relic' | 'lucky_block';
+  cardId?: string;
+  relicId?: string;
+  resourceType?: 'gems';
+  amount?: number;
+  cost: number;
+  isSoldOut: boolean;
+}
+
+export interface ShopState {
+  items: ShopItem[];
+  nextRestockAt: number;
 }
